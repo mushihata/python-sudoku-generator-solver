@@ -1,25 +1,77 @@
-##Working code to Generate a puzzle
+# Working code to Generate a puzzle
 # -*- coding: utf-8 -*-
 import time
 import copy
 import random
+import itertools
 
-level = "Medium"
+puzzles = []
+
+# Copied next three function from stackoverflow
+# https://stackoverflow.com/questions/1697334/algorithm-for-solving-sudoku
+# ---------------------------------------------
+
+
+def findNextCellToFill(grid, i, j):
+    for x in range(i, 9):
+        for y in range(j, 9):
+            if grid[x][y] == 0:
+                return x, y
+    for x in range(0, 9):
+        for y in range(0, 9):
+            if grid[x][y] == 0:
+                return x, y
+    return -1, -1
+
+
+def isValid(grid, i, j, e):
+    rowOk = all([e != grid[i][x] for x in range(9)])
+    if rowOk:
+        columnOk = all([e != grid[x][j] for x in range(9)])
+        if columnOk:
+            # finding the top left x,y co-ordinates of the section containing the i,j cell
+            # floored quotient should be used here.
+            secTopX, secTopY = 3 * (i//3), 3 * (j//3)
+            for x in range(secTopX, secTopX+3):
+                for y in range(secTopY, secTopY+3):
+                    if grid[x][y] == e:
+                        return False
+            return True
+    return False
+
+
+def solveSudoku(grid, i=0, j=0):
+    i, j = findNextCellToFill(grid, i, j)
+    if i == -1:
+        return True
+    for e in range(1, 10):
+        if isValid(grid, i, j, e):
+            grid[i][j] = e
+            if solveSudoku(grid, i, j):
+                return True
+            # Undo the current cell for backtracking
+            grid[i][j] = 0
+    return False
+
+# ---------------------------------------------------------------
+
 
 """ [Level of Difficulty] = Input the level of difficulty of the sudoku puzzle. Difficulty levels
         include ‘Easy’ ‘Medium’ ‘Hard’ and ‘Insane’. Outputs a sudoku of desired
         difficulty."""
 
+
 class cell():
     """ Initilalizes cell object. A cell is a single box of a sudoku puzzle. 81 cells make up the body of a
         sudoku puzzle. Initializes puzzle with all possible answers available, solved to false, and position of cell within the
         sudoku puzzle"""
+
     def __init__(self, position):
-        self.possibleAnswers = [1,2,3,4,5,6,7,8,9]
+        self.possibleAnswers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.answer = None
         self.position = position
         self.solved = False
-        
+
     def remove(self, num):
         """Removes num from list of possible anwers in cell object."""
         if num in self.possibleAnswers and self.solved == False:
@@ -52,48 +104,50 @@ class cell():
             return self.possibleAnswers[0]
         else:
             return 0
-        
+
     def setAnswer(self, num):
         """ Sets an answer of a puzzle and sets a cell's solved method to true. This
             method also eliminates all other possible numbers"""
-        if num in [1,2,3,4,5,6,7,8,9]:
+        if num in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             self.solved = True
             self.answer = num
             self.possibleAnswers = [num]
         else:
             raise(ValueError)
-       
+
     def reset(self):
-        """ Resets all attributes of a cell to the original conditions""" 
-        self.possibleAnswers = [1,2,3,4,5,6,7,8,9]
+        """ Resets all attributes of a cell to the original conditions"""
+        self.possibleAnswers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         self.answer = None
         self.solved = False
+
 
 def emptySudoku():
     ''' Creates an empty sudoku in row major form. Sets up all of the x, y, and z
         coordinates for the sudoku cells'''
     ans = []
-    for x in range(1,10):
-        if x in [7,8,9]:
+    for x in range(1, 10):
+        if x in [7, 8, 9]:
             intz = 7
             z = 7
-        if x in [4,5,6]:
+        if x in [4, 5, 6]:
             intz = 4
             z = 4
-        if x in [1,2,3]:
+        if x in [1, 2, 3]:
             intz = 1
             z = 1
-        for y in range(1,10):
+        for y in range(1, 10):
             z = intz
-            if y in [7,8,9]:
+            if y in [7, 8, 9]:
                 z += 2
-            if y in [4,5,6]:
+            if y in [4, 5, 6]:
                 z += 1
-            if y in [1,2,3]:
+            if y in [1, 2, 3]:
                 z += 0
-            c = cell((x,y,z))
+            c = cell((x, y, z))
             ans.append(c)
     return ans
+
 
 def printSudoku(sudoku):
     '''Prints out a sudoku in a format that is easy for a human to read'''
@@ -106,61 +160,105 @@ def printSudoku(sudoku):
     row7 = []
     row8 = []
     row9 = []
+    grid = [row1, row2, row3, row4, row5, row6, row7, row8, row9]
+
+    # Print Puzzle
+    print("\n")
+
+    print("puzzle: ", end="")
+    puzzle = ""
     for i in range(81):
-        if i in range(0,9):
+        puzzle = puzzle + str(sudoku[i].returnSolved())
+
+    puzzles.append(puzzle)
+    print(puzzle)
+
+    for i in range(81):
+
+        if i in range(0, 9):
             row1.append(sudoku[i].returnSolved())
-        if i in range(9,18):
+        if i in range(9, 18):
             row2.append(sudoku[i].returnSolved())
-        if i in range(18,27):
+        if i in range(18, 27):
             row3.append(sudoku[i].returnSolved())
-        if i in range(27,36):
+        if i in range(27, 36):
             row4.append(sudoku[i].returnSolved())
-        if i in range(36,45):
+        if i in range(36, 45):
             row5.append(sudoku[i].returnSolved())
-        if i in range(45,54):
+        if i in range(45, 54):
             row6.append(sudoku[i].returnSolved())
-        if i in range(54,63):
+        if i in range(54, 63):
             row7.append(sudoku[i].returnSolved())
-        if i in range(63,72):
+        if i in range(63, 72):
             row8.append(sudoku[i].returnSolved())
-        if i in range(72,81):
+        if i in range(72, 81):
             row9.append(sudoku[i].returnSolved())
-    print(row1[0:3],row1[3:6],row1[6:10])
-    print(row2[0:3],row2[3:6],row2[6:10])
-    print(row3[0:3],row3[3:6],row3[6:10])
+
+
+    print('\n')
+    print(row1[0:3], row1[3:6], row1[6:10])
+    print(row2[0:3], row2[3:6], row2[6:10])
+    print(row3[0:3], row3[3:6], row3[6:10])
     print('')
-    print(row4[0:3],row4[3:6],row4[6:10])
-    print(row5[0:3],row5[3:6],row5[6:10])
-    print(row6[0:3],row6[3:6],row6[6:10])
+    print(row4[0:3], row4[3:6], row4[6:10])
+    print(row5[0:3], row5[3:6], row5[6:10])
+    print(row6[0:3], row6[3:6], row6[6:10])
     print('')
-    print(row7[0:3],row7[3:6],row7[6:10])
-    print(row8[0:3],row8[3:6],row8[6:10])
-    print(row9[0:3],row9[3:6],row9[6:10])
+    print(row7[0:3], row7[3:6], row7[6:10])
+    print(row8[0:3], row8[3:6], row8[6:10])
+    print(row9[0:3], row9[3:6], row9[6:10])
+    print('\n')
+    
+
+    solveSudoku([row1, row2, row3, row4, row5, row6, row7, row8, row9])
+
+    flattenGrid = list(itertools.chain(*grid))
+
+    print("solution: ", end="")
+    print(''.join(map(str, flattenGrid)))
+
+    print('\n')
+    print(row1[0:3], row1[3:6], row1[6:10])
+    print(row2[0:3], row2[3:6], row2[6:10])
+    print(row3[0:3], row3[3:6], row3[6:10])
+    print('')
+    print(row4[0:3], row4[3:6], row4[6:10])
+    print(row5[0:3], row5[3:6], row5[6:10])
+    print(row6[0:3], row6[3:6], row6[6:10])
+    print('')
+    print(row7[0:3], row7[3:6], row7[6:10])
+    print(row8[0:3], row8[3:6], row8[6:10])
+    print(row9[0:3], row9[3:6], row9[6:10])
+
+    print("\n")
+
 
 def sudokuGen():
     '''Generates a completed sudoku. Sudoku is completly random'''
-    cells = [i for i in range(81)] ## our cells is the positions of cells not currently set
+    cells = [i for i in range(
+        81)]  # our cells is the positions of cells not currently set
     sudoku = emptySudoku()
     while len(cells) != 0:
         lowestNum = []
         Lowest = []
         for i in cells:
-            lowestNum.append(sudoku[i].lenOfPossible())  ## finds all the lengths of of possible answers for each remaining cell
-        m = min(lowestNum)  ## finds the minimum of those
+            # finds all the lengths of of possible answers for each remaining cell
+            lowestNum.append(sudoku[i].lenOfPossible())
+        m = min(lowestNum)  # finds the minimum of those
         '''Puts all of the cells with the lowest number of possible answers in a list titled Lowest'''
         for i in cells:
             if sudoku[i].lenOfPossible() == m:
                 Lowest.append(sudoku[i])
         '''Now we randomly choose a possible answer and set it to the cell'''
         choiceElement = random.choice(Lowest)
-        choiceIndex = sudoku.index(choiceElement) 
-        cells.remove(choiceIndex)                 
+        choiceIndex = sudoku.index(choiceElement)
+        cells.remove(choiceIndex)
         position1 = choiceElement.checkPosition()
-        if choiceElement.solvedMethod() == False:  ##the actual setting of the cell
+        if choiceElement.solvedMethod() == False:  # the actual setting of the cell
             possibleValues = choiceElement.returnPossible()
             finalValue = random.choice(possibleValues)
             choiceElement.setAnswer(finalValue)
-            for i in cells:  ##now we iterate through the remaining unset cells and remove the input if it's in the same row, col, or box
+            for i in cells:  # now we iterate through the remaining unset cells and remove the input if it's in the same row, col, or box
                 position2 = sudoku[i].checkPosition()
                 if position1[0] == position2[0]:
                     sudoku[i].remove(finalValue)
@@ -171,7 +269,7 @@ def sudokuGen():
 
         else:
             finalValue = choiceElement.returnSolved()
-            for i in cells:  ##now we iterate through the remaining unset cells and remove the input if it's in the same row, col, or box
+            for i in cells:  # now we iterate through the remaining unset cells and remove the input if it's in the same row, col, or box
                 position2 = sudoku[i].checkPosition()
                 if position1[0] == position2[0]:
                     sudoku[i].remove(finalValue)
@@ -180,6 +278,7 @@ def sudokuGen():
                 if position1[2] == position2[2]:
                     sudoku[i].remove(finalValue)
     return sudoku
+
 
 def sudokuChecker(sudoku):
     """ Checks to see if an input a completed sudoku puzzle is of the correct format and abides by all
@@ -196,6 +295,7 @@ def sudokuChecker(sudoku):
                         return False
     return True
 
+
 def perfectSudoku():
     '''Generates a completed sudoku. Sudoku is in the correct format and is completly random'''
     result = False
@@ -204,7 +304,8 @@ def perfectSudoku():
         result = sudokuChecker(s)
     return s
 
-def solver(sudoku, f = 0):
+
+def solver(sudoku, f=0):
     """ Input an incomplete Sudoku puzzle and solver method will return the solution to the puzzle. First checks to see if any obvious answers can be set
         then checks the rows columns and boxes for obvious solutions. Lastly the solver 'guesses' a random possible answer from a random cell and checks to see if that is a
         possible answer. If the 'guessed' answer is incorrect, then it removes the guess and tries a different answer in a different cell and checks for a solution. It does this until
@@ -214,7 +315,8 @@ def solver(sudoku, f = 0):
         return False
     guesses = 0
     copy_s = copy.deepcopy(sudoku)
-    cells = [i for i in range(81)] ## our cells is the positions of cells not currently set
+    # our cells is the positions of cells not currently set
+    cells = [i for i in range(81)]
     solvedCells = []
     for i in cells:
         if copy_s[i].lenOfPossible() == 1:
@@ -224,7 +326,7 @@ def solver(sudoku, f = 0):
             cell = copy_s[n]
             position1 = cell.checkPosition()
             finalValue = copy_s[n].returnSolved()
-            for i in cells:  ##now we itterate through the remaing unset cells and remove the input if it's in the same row, col, or box
+            for i in cells:  # now we itterate through the remaing unset cells and remove the input if it's in the same row, col, or box
                 position2 = copy_s[i].checkPosition()
                 if position1[0] == position2[0]:
                     copy_s[i].remove(finalValue)
@@ -234,11 +336,12 @@ def solver(sudoku, f = 0):
                     copy_s[i].remove(finalValue)
                 if copy_s[i].lenOfPossible() == 1 and i not in solvedCells and i in cells:
                     solvedCells.append(i)
-                ##print(n)
+                # print(n)
+
             solvedCells.remove(n)
             cells.remove(n)
         if cells != [] and solvedCells == []:
-            lowestNum=[]
+            lowestNum = []
             lowest = []
             for i in cells:
                 lowestNum.append(copy_s[i].lenOfPossible())
@@ -264,8 +367,9 @@ def solver(sudoku, f = 0):
         return copy_s, guesses, level
     else:
         return solver(sudoku, f+1)
-    
-def solve(sudoku, n = 0):
+
+
+def solve(sudoku, n=0):
     """ Uses the solver method to solve a puzzle. This method was built in order to avoid recursion depth errors. Returns True if the puzzle is solvable and
         false if otherwise"""
     if n < 30:
@@ -276,7 +380,8 @@ def solve(sudoku, n = 0):
             solve(sudoku, n+1)
     else:
         return False
-    
+
+
 def puzzleGen(sudoku):
     """ Generates a puzzle with a unique solution. """
     cells = [i for i in range(81)]
@@ -291,8 +396,8 @@ def puzzleGen(sudoku):
             print("Guesses: " + str(f[1]))
             print("Level: " + str(f[2]))
             return printSudoku(sudoku)
-        elif equalChecker(s[0],solve(copy_s)[0]):
-            if equalChecker(s[0],solve(copy_s)[0]):
+        elif equalChecker(s[0], solve(copy_s)[0]):
+            if equalChecker(s[0], solve(copy_s)[0]):
                 sudoku[randIndex].reset()
         else:
             f = solve(sudoku)
@@ -300,12 +405,14 @@ def puzzleGen(sudoku):
 ##            print("Level: " + str(f[2]))
             return sudoku, f[1], f[2]
 
-def equalChecker(s1,s2):
+
+def equalChecker(s1, s2):
     """ Checks to see if two puzzles are the same"""
     for i in range(len(s1)):
         if s1[i].returnSolved() != s2[i].returnSolved():
             return False
     return True
+
 
 def main(level):
     """ Input the level of difficulty of the sudoku puzzle. Difficulty levels
@@ -378,5 +485,28 @@ def main(level):
     else:
         raise(ValueError)
 
-main(level)
 
+
+# Change those values 
+#=========================
+level = "Medium"
+number_of_puzzles = 200
+#=========================
+
+# To generete puzzles in a file
+# python3 sudoku.py > puzzles.txt
+
+
+for i in range(number_of_puzzles):
+    print("\n")
+    print("Sudoku No. " + str(i+1))
+    print("----------------------------")
+    main(level)
+    
+
+    if(i == number_of_puzzles-1):
+        print("\n")
+        print("Number of gernerated puzzles: " + str(number_of_puzzles) )
+        print("Number of repeated puzzles: " + str( len(puzzles) - len(set(puzzles))))
+
+        break
